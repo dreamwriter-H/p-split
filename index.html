@@ -229,6 +229,7 @@
 
                     <div className="flex-1 overflow-y-auto content-start grid grid-cols-2 gap-4 auto-rows-min">
                         {wallets.map(w => {
+                            // 修復：使用 getPersonNameHelper 確保顯示正確暱稱
                             const masterName = getPersonNameHelper(w.master.id, localPeople);
                             
                             return (
@@ -606,8 +607,21 @@
 
             const handleGenerateMessage = async () => {
                 setIsGenerating(true);
-                const debts = results.map(r => `${r.name} 應付 $${Math.round(r.amount)}`).join(', ');
-                const prompt = `你是一個客觀記帳助手。請產生簡短結算訊息。聚餐：${data.title} (${data.date})\n總金額：${formatMoney(Math.round(finalTotal))}\n每人：${debts}\n要求：直球對決，第一行寫日期+目的，接著總金額，最後列表。`;
+                const debts = results.map(r => `．${r.name}：${formatMoney(Math.round(r.amount))}`).join('\n');
+                const prompt = `請為「${data.title}」這場聚餐產生一段結算文字，讓我直接複製貼到 Line 群組。
+                【重要規則】
+                1. 絕對不要出現「我是你的助手」、「這是生成的文案」等 AI 自稱。
+                2. 絕對不要使用 Markdown 粗體符號（**）。
+                3. 不要使用表格或分隔線。
+                4. 列表請統一使用全形圓點「．」開頭。
+
+                【內容結構】
+                1. 開場白（1句）：用輕鬆口語（如「快樂無價，帳單面對XD」、「大家辛苦了，結帳囉」），請隨機發揮不同寫法。
+                2. 帳單明細（請將以下數據整理為條列式，格式為「．姓名：金額」）：
+                ${debts}
+                3. 總金額：Total ${formatMoney(Math.round(finalTotal))}
+                `;
+                
                 try {
                     const res = await callGemini({ contents: [{ parts: [{ text: prompt }] }] });
                     setAiMessage(res.candidates[0].content.parts[0].text);
@@ -779,7 +793,18 @@
             const handleGenerateMessage = async () => {
                 setIsGenerating(true);
                 const txText = transactions.map(t => `${getPersonNameHelper(t.from, trip.people)} 需支付 ${getPersonNameHelper(t.to, trip.people)} ${formatMoney(Math.round(t.amount))}`).join('\n');
-                const prompt = `你是一個客觀工具。請產生結算公告。旅遊：${trip.name}\n轉帳：\n${txText}\n要求：直球對決，第一行寫旅遊名稱結算，接著列出誰給誰多少。`;
+                const prompt = `請為「${trip.name}」這場活動產生一段結算文字，讓我直接複製貼到 Line 群組。
+                【重要規則】
+                1. 絕對不要出現「我是你的助手」、「這是生成的文案」等 AI 自稱。
+                2. 絕對不要使用 Markdown 粗體符號（**）。
+                3. 不要使用表格或分隔線。
+                4. 列表請統一使用全形圓點「．」開頭。
+
+                【內容結構】
+                1. 開場白（1句）：用輕鬆口語（如「旅遊結束來算帳囉」、「轉帳轉起來～」），請隨機發揮不同寫法。
+                2. 建議轉帳明細（請將以下數據整理為條列式，格式為「．A 付給 B $金額」）：
+                ${txText}`;
+                
                 try {
                     const res = await callGemini({ contents: [{ parts: [{ text: prompt }] }] });
                     setAiMessage(res.candidates[0].content.parts[0].text);
